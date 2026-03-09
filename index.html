@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cute Cat Coin Creator</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0c29; background: linear-gradient(to right, #24243e, #302b63, #0f0c29); color: white; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 450px; margin: 20px auto; background: rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .address-box { background: #1a1a2e; padding: 15px; border-radius: 10px; font-family: monospace; color: #00d2ff; border: 1px dashed #ff7eb3; margin: 15px 0; word-break: break-all; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; outline: none; box-sizing: border-box; }
+        button { background: #ff7eb3; color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        button:hover { background: #ff4f9a; transform: scale(1.02); }
+        .coin-card { background: #1a1a2e; border: 1px solid #ff7eb3; border-radius: 15px; padding: 15px; margin: 10px; display: inline-block; width: 160px; }
+        .coin-card img { width: 100%; border-radius: 10px; height: 140px; object-fit: cover; }
+        hr { opacity: 0.2; margin: 25px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🐱 Cat Coin Creator</h2>
+    <p style="font-size: 14px; color: #ccc;">Step 1: Send <b>5 USDT (BEP20/TRC20)</b></p>
+    <div class="address-box" id="wallet">TKoX4MDxAaPtkcXvvjqwKmCF4oMkCs9j78</div>
+    <button onclick="copyWallet()">Copy Wallet Address</button>
+    
+    <hr>
+    
+    <p style="font-size: 14px; color: #ccc;">Step 2: Submit Details & TxID</p>
+    <input type="text" id="coinName" placeholder="Coin Name (e.g. MeowCoin)">
+    <input type="text" id="coinSymbol" placeholder="Symbol (e.g. MEOW)">
+    <input type="text" id="txid" placeholder="Paste Transaction ID (TxID) here">
+    <input type="file" id="coinImg" accept="image/*">
+    <button onclick="submitToFirebase()" style="background: #00d2ff;">Submit Request</button>
+</div>
+
+<h3>🌟 Verified Live Coins</h3>
+<div id="displayArea"></div>
+
+<script>
+    // --- FIREBASE CONFIG ---
+    // https://catcoin-dc4e0-default-rtdb.firebaseio.com/
+    const firebaseConfig = {
+        databaseURL: "APNA_DATABASE_URL_YAHAN_PASTE_KAREIN" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    function copyWallet() {
+        navigator.clipboard.writeText(document.getElementById('wallet').innerText);
+        alert("Address Copied! Ab 5 USDT bhej kar TxID paste karein.");
+    }
+
+    // Submit Data
+    function submitToFirebase() {
+        const name = document.getElementById('coinName').value;
+        const symbol = document.getElementById('coinSymbol').value;
+        const txid = document.getElementById('txid').value;
+        const file = document.getElementById('coinImg').files[0];
+
+        if(!name || !symbol || !txid || !file) return alert("Sari fields bharein!");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imageData = e.target.result;
+            
+            // Database mein save ho raha hai as "pending"
+            database.ref('requests/').push({
+                name: name,
+                symbol: symbol,
+                txid: txid,
+                image: imageData,
+                status: "pending" // Admin (Aap) isko "approved" karenge
+            });
+            alert("Request sent! Admin verify karke live kar dega.");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Live Coins Load Karna
+    database.ref('requests/').on('value', (snapshot) => {
+        const data = snapshot.val();
+        const displayArea = document.getElementById('displayArea');
+        displayArea.innerHTML = "";
+        
+        for (let id in data) {
+            if(data[id].status === "approved") {
+                displayArea.innerHTML += `
+                    <div class="coin-card">
+                        <img src="${data[id].image}">
+                        <h4>${data[id].name}</h4>
+                        <p>$${data[id].symbol}</p>
+                    </div>
+                `;
+            }
+        }
+    });
+</script>
+</body>
+</html>

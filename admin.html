@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cute Cat Coin Creator - Admin Mode</title>
+    <style>
+        body { font-family: Arial; background: linear-gradient(135deg,#1e1e2f,#ff7eb3); color: white; text-align: center; margin: 0; padding-bottom: 50px; }
+        header { padding: 20px; font-size: 32px; font-weight: bold; }
+        .container { width: 90%; max-width: 500px; margin: auto; background: #2a2a3d; padding: 20px; border-radius: 15px; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; box-sizing: border-box; }
+        button { background: #ff7eb3; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #ff4f9a; }
+        .address { background: #111; padding: 15px; border-radius: 8px; word-break: break-all; font-family: monospace; color: #00ffcc; margin: 10px 0; }
+        .admin-panel { margin-top: 40px; border-top: 2px dashed #ff7eb3; padding-top: 20px; }
+        .pending-card { background: #3d3d5c; padding: 15px; margin: 10px auto; border-radius: 10px; max-width: 400px; text-align: left; }
+        .coin { background: #2a2a3d; padding: 15px; border-radius: 10px; margin: 10px; display: inline-block; width: 180px; border: 2px solid #ff7eb3; }
+        .coin img { width: 100%; border-radius: 10px; height: 150px; object-fit: cover; }
+        .status-badge { font-size: 12px; padding: 4px 8px; border-radius: 4px; background: #ff9800; }
+    </style>
+</head>
+<body>
+
+<header>🐱 Cute Cat Coin Creator</header>
+
+<div class="container">
+    <h3>Step 1: Payment (5 USDT)</h3>
+    <p>Niche diye gaye address par 5 USDT bhejein:</p>
+    <div class="address" id="wallet">TKoX4MDxAaPtkcXvvjqwKmCF4oMkCs9j78</div>
+    <button onclick="copyAddress()">Copy Wallet Address</button>
+    
+    <hr>
+    
+    <h3>Step 2: Submit Details</h3>
+    <input type="text" id="name" placeholder="Coin Name">
+    <input type="text" id="symbol" placeholder="Coin Symbol">
+    <input type="text" id="txid" placeholder="Transaction ID (TxID)">
+    <label style="display:block; margin-top:10px; font-size:12px;">Upload Coin Logo:</label>
+    <input type="file" id="image" accept="image/*">
+    <button onclick="submitRequest()" style="background:#4CAF50;">Submit for Approval</button>
+</div>
+
+<div class="admin-panel">
+    <h2>🛠 Admin Approval Panel</h2>
+    <p>Yahan aapko pending requests dikhengi</p>
+    <div id="pendingRequests"></div>
+</div>
+
+<hr>
+
+<h2>🌟 Live Coins</h2>
+<div class="coins" id="liveCoins"></div>
+
+<script>
+    let pendingData = [];
+
+    function copyAddress() {
+        let text = document.getElementById("wallet").innerText;
+        navigator.clipboard.writeText(text);
+        alert("Address Copied! Payment ke baad TxID enter karein.");
+    }
+
+    function submitRequest() {
+        let name = document.getElementById("name").value;
+        let symbol = document.getElementById("symbol").value;
+        let txid = document.getElementById("txid").value;
+        let imageFile = document.getElementById("image").files[0];
+
+        if(!name || !symbol || !txid || !imageFile) {
+            alert("Please fill all fields and upload an image.");
+            return;
+        }
+
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let request = {
+                id: Date.now(),
+                name: name,
+                symbol: symbol,
+                txid: txid,
+                imageData: e.target.result
+            };
+            
+            pendingData.push(request);
+            renderAdminPanel();
+            alert("Request submitted! Wait for admin approval.");
+            
+            // Clear inputs
+            document.getElementById("name").value = "";
+            document.getElementById("symbol").value = "";
+            document.getElementById("txid").value = "";
+        };
+        reader.readAsDataURL(imageFile);
+    }
+
+    function renderAdminPanel() {
+        let container = document.getElementById("pendingRequests");
+        container.innerHTML = "";
+        
+        pendingData.forEach((req, index) => {
+            container.innerHTML += `
+                <div class="pending-card">
+                    <strong>Coin:</strong> ${req.name} (${req.symbol})<br>
+                    <strong>TxID:</strong> <small>${req.txid}</small><br>
+                    <button onclick="approveCoin(${index})" style="background:#2ecc71; width:auto; padding:5px 15px; margin-top:10px;">Approve & Create</button>
+                    <button onclick="rejectCoin(${index})" style="background:#e74c3c; width:auto; padding:5px 15px;">Reject</button>
+                </div>
+            `;
+        });
+    }
+
+    function approveCoin(index) {
+        let coin = pendingData[index];
+        let coinHTML = `
+            <div class="coin">
+                <img src="${coin.imageData}">
+                <h4>${coin.name}</h4>
+                <p>$${coin.symbol}</p>
+                <span style="color:#2ecc71">✅ Verified</span>
+            </div>
+        `;
+        document.getElementById("liveCoins").innerHTML += coinHTML;
+        
+        // Remove from pending
+        pendingData.splice(index, 1);
+        renderAdminPanel();
+        alert("Coin Approved Successfully!");
+    }
+
+    function rejectCoin(index) {
+        pendingData.splice(index, 1);
+        renderAdminPanel();
+    }
+</script>
+
+</body>
+</html>
